@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { UserPreferences } from '../types';
 
-const API_KEY = process.env.API_KEY;
+const API_KEY = import.meta.VITE_API_KEY;
 
 if (!API_KEY) {
   // This is a fallback for development; in a real extension, the key would be set in the build environment.
