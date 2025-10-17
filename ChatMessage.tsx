@@ -1,0 +1,149 @@
+import React, { useRef, useState } from 'react';
+import { Message } from '../types';
+import { BotIcon, UserIcon, PrintIcon, CopyIcon } from './Icons';
+
+interface ChatMessageProps {
+  message: Message;
+  isStreaming?: boolean;
+}
+
+const SimpleMarkdownRenderer: React.FC<{ text: string, isStreaming?: boolean }> = ({ text, isStreaming }) => {
+  const renderedHtml = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')           // Italic
+    .replace(/^- (.*$)/gim, '<li>$1</li>')          // List items
+    .replace(/(\<ul>)?(<li>.*<\/li>)(<\/ul>)?/gs, (match, pre, lis, post) => {
+       // Wrap consecutive list items in a single <ul>
+       if (pre) {
+           return match;
+       }
+       return `<ul>${lis}</ul>`;
+    })
+    .replace(/\n/g, '<br />'); // Handle newlines
+    
+  return (
+    <div className="text-sm whitespace-pre-wrap">
+      <div dangerouslySetInnerHTML={{ __html: renderedHtml }} style={{ display: 'inline' }} />
+      {isStreaming && <span className="blinking-cursor"></span>}
+      <style>{`
+        .blinking-cursor {
+          display: inline-block;
+          width: 8px;
+          height: 1rem;
+          background-color: #475569;
+          animation: blink 1s step-end infinite;
+          vertical-align: bottom;
+          margin-left: 2px;
+        }
+        @keyframes blink {
+          50% { opacity: 0; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
+  const isUser = message.role === 'user';
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handlePrint = () => {
+    // The logo HTML for printing
+    const logoTextHtml = `
+      <div class="logo-container">
+        <div style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 24pt; letter-spacing: 1px;">LiahonaBooks</div>
+        <div style="font-family: 'IM Fell English SC', serif; font-size: 14pt; margin-top: 5px;">www.liahonabooks.com</div>
+      </div>
+    `;
+    
+    const printWindow = window.open('', '', 'height=600,width=800');
+
+    if (printWindow) {
+      printWindow.document.write('<html><head><title>Print Answer</title>');
+      printWindow.document.write(`
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+        <style>
+          body { font-family: sans-serif; padding: 20px; font-size: 12pt; line-height: 1.5; color: #334155; }
+          .logo-container { text-align: center; margin-bottom: 20px; }
+          hr { border: none; border-top: 1px solid #e2e8f0; margin: 20px 0; }
+          p, div, span { word-wrap: break-word; }
+          ul { padding-left: 20px; }
+        </style>
+      `);
+      printWindow.document.write('</head><body>');
+      printWindow.document.write(logoTextHtml);
+      printWindow.document.write('<hr />');
+      printWindow.document.write(message.text.replace(/\n/g, '<br/>'));
+      printWindow.document.write('</body></html>');
+      
+      printWindow.document.close();
+      
+      // This event ensures the window is closed only AFTER the print dialog is handled.
+      printWindow.onafterprint = () => {
+        printWindow.close();
+      };
+
+      setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 250);
+    } else {
+      alert('Could not open print window. Please check your browser\'s popup blocker settings.');
+    }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(message.text).then(() => {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+    });
+  };
+
+  return (
+    <div className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : ''}`}>
+      <div className={`p-2 rounded-full ${isUser ? 'bg-slate-200' : 'bg-slate-100'}`}>
+        {isUser ? (
+            <UserIcon className="w-6 h-6 text-slate-700" />
+        ) : (
+            <BotIcon className="w-6 h-6 text-slate-700" />
+        )}
+      </div>
+       {isUser ? (
+        <div className="rounded-lg px-4 py-3 max-w-sm shadow-sm bg-gradient-to-br from-slate-700 to-slate-800 text-white">
+          <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+        </div>
+      ) : (
+        <div className="flex flex-col items-start w-full">
+          <div className="rounded-lg px-4 py-3 max-w-sm shadow-sm bg-white text-slate-800 border border-slate-200">
+             {message.text ? <SimpleMarkdownRenderer text={message.text} isStreaming={isStreaming} /> : <div className="animate-pulse h-4 w-5 bg-slate-300 rounded-full"></div>}
+          </div>
+          {message.text && !isStreaming && (
+            <div className="mt-2 flex items-center gap-4">
+              <button
+                onClick={handlePrint}
+                className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 rounded px-2 py-1"
+                aria-label="Print this answer"
+              >
+                <PrintIcon className="w-5 h-5" />
+                <span>Print Answer</span>
+              </button>
+               <button
+                onClick={handleCopy}
+                className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 rounded px-2 py-1"
+                aria-label="Copy this answer"
+              >
+                <CopyIcon className="w-5 h-5" />
+                <span>{isCopied ? 'Copied!' : 'Copy'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ChatMessage;
