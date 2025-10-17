@@ -1,0 +1,5 @@
+{
+  "name": "Genealogy Chatbot",
+  "description": "An intelligent chatbot to help you with your genealogy research. Ask questions about research techniques, top websites like FamilySearch.org and Ancestry.com, and discover new sources.",
+  "requestFramePermissions": []
+}
