@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SendIcon } from './Icons';
+import { SendIcon } from './Icons.tsx';
 
 interface ChatInputProps {
   onSendMessage: (text: string) => void;

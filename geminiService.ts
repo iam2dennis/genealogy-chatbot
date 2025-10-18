@@ -1,5 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
-import { UserPreferences } from './types';
+import { UserPreferences } from './types.ts';
+
+// Fix: Switched from using Vite's import.meta.env to process.env.API_KEY for API key access, as required by the coding guidelines. This resolves the TypeScript error regarding 'import.meta.env'.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
 - You MUST focus on these top 5 websites: FamilySearch.org, Ancestry.com, MyHeritage, Findmypast, and the US National Archives (archives.gov).
@@ -15,11 +18,8 @@ export const getGenealogyAnswer = async (
   preferences: UserPreferences,
   onStreamUpdate: (chunk: string) => void,
   onStreamEnd: () => void,
-  onApiKeyError: () => void,
 ): Promise<void> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    
     let context_prompt = `The user wants to know about "${prompt}".`;
     if (preferences.website !== "Any Website") {
         context_prompt += `\nTheir question is specifically about the website: ${preferences.website}.`;
@@ -42,7 +42,7 @@ export const getGenealogyAnswer = async (
     });
     
     for await (const chunk of responseStream) {
-        onStreamUpdate(chunk.text ?? '');
+        onStreamUpdate(chunk.text);
     }
 
   } catch (error) {
@@ -51,11 +51,6 @@ export const getGenealogyAnswer = async (
     if (error instanceof Error) {
         if (error.message.includes('API key not valid')) {
             errorMessage = 'The API key is invalid. Please check your configuration.';
-            onApiKeyError();
-        } else if (error.message.includes('Requested entity was not found.')) {
-            // This specific error indicates a problem with the selected key in the platform.
-            errorMessage = 'Your API Key is invalid or expired. Please select a new one.';
-            onApiKeyError();
         } else {
             errorMessage = error.message;
         }

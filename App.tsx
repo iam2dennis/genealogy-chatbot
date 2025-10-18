@@ -1,17 +1,15 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Message, UserPreferences } from './types';
-import ChatMessage from './ChatMessage';
-import ChatInput from './ChatInput';
-import InitialQuestions from './InitialQuestions';
-import { getGenealogyAnswer } from './geminiService';
-import { LiahonaBooksLogo, RestartIcon } from './Icons';
+import { Message, UserPreferences } from './types.ts';
+import ChatMessage from './ChatMessage.tsx';
+import ChatInput from './ChatInput.tsx';
+import InitialQuestions from './InitialQuestions.tsx';
+import { getGenealogyAnswer } from './geminiService.ts';
+import { LiahonaBooksLogo, RestartIcon } from './Icons.tsx';
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  // For production deployment, we assume the API key is set as an environment variable.
-  const hasApiKey = true;
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -25,7 +23,7 @@ const App: React.FC = () => {
     setMessages([]);
     setPreferences(null);
   };
-  
+
   const handlePreferencesSubmit = (submittedPreferences: UserPreferences) => {
     setPreferences(submittedPreferences);
     let websiteText = submittedPreferences.website === 'Any Website' ? 'genealogy in general' : `for ${submittedPreferences.website}`;
@@ -37,13 +35,6 @@ const App: React.FC = () => {
         text: `Great! I'm ready to help you with ${answerTypeText} about ${websiteText}. What's your first question?`,
       },
     ]);
-  };
-  
-  const handleApiKeyError = () => {
-    // In a production environment, this indicates the environment variable is invalid.
-    // We'll show an error but can't prompt for a new key.
-    setMessages(prev => [...prev, { role: 'model', text: 'There was a critical error with the API configuration. Please contact the site administrator.' }]);
-    setIsLoading(false);
   };
 
   const handleSendMessage = useCallback(async (text: string) => {
@@ -68,7 +59,7 @@ const App: React.FC = () => {
       setIsLoading(false);
     };
 
-    await getGenealogyAnswer(text, preferences, onStreamUpdate, onStreamEnd, handleApiKeyError);
+    await getGenealogyAnswer(text, preferences, onStreamUpdate, onStreamEnd);
   }, [preferences]);
 
   return (
@@ -95,7 +86,7 @@ const App: React.FC = () => {
           </button>
         )}
       </header>
-      
+
       {!preferences ? (
         <InitialQuestions onSubmit={handlePreferencesSubmit} />
       ) : (
@@ -115,7 +106,7 @@ const App: React.FC = () => {
         </main>
       )}
 
-      {hasApiKey && preferences && (
+      {preferences && (
         <footer className="bg-white border-t border-slate-200 p-4">
           <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
         </footer>
