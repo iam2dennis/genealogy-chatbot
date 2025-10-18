@@ -42,7 +42,7 @@ export const getGenealogyAnswer = async (
     });
     
     for await (const chunk of responseStream) {
-        onStreamUpdate(chunk.text);
+        onStreamUpdate(chunk.text ?? '');
     }
 
   } catch (error) {
