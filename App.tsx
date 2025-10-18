@@ -10,6 +10,8 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  // For production deployment, we assume the API key is set as an environment variable.
+  const [hasApiKey, setHasApiKey] = useState<boolean>(true);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -23,11 +25,11 @@ const App: React.FC = () => {
     setMessages([]);
     setPreferences(null);
   };
-
+  
   const handlePreferencesSubmit = (submittedPreferences: UserPreferences) => {
     setPreferences(submittedPreferences);
     let websiteText = submittedPreferences.website === 'Any Website' ? 'genealogy in general' : `for ${submittedPreferences.website}`;
-    let answerTypeText = submittedPreferences.answerType === 'detailed' ? 'detailed answers' : 'step-by-step instructions';
+    let answerTypeText = submittedPreferences.answerType === 'detailed' ? 'detailed answers' 'step-by-step instructions';
     
     setMessages([
       {
@@ -35,6 +37,13 @@ const App: React.FC = () => {
         text: `Great! I'm ready to help you with ${answerTypeText} about ${websiteText}. What's your first question?`,
       },
     ]);
+  };
+  
+  const handleApiKeyError = () => {
+    // In a production environment, this indicates the environment variable is invalid.
+    // We'll show an error but can't prompt for a new key.
+    setMessages(prev => [...prev, { role: 'model', text: 'There was a critical error with the API configuration. Please contact the site administrator.' }]);
+    setIsLoading(false);
   };
 
   const handleSendMessage = useCallback(async (text: string) => {
@@ -59,7 +68,7 @@ const App: React.FC = () => {
       setIsLoading(false);
     };
 
-    await getGenealogyAnswer(text, preferences, onStreamUpdate, onStreamEnd);
+    await getGenealogyAnswer(text, preferences, onStreamUpdate, onStreamEnd, handleApiKeyError);
   }, [preferences]);
 
   return (
@@ -86,7 +95,7 @@ const App: React.FC = () => {
           </button>
         )}
       </header>
-
+      
       {!preferences ? (
         <InitialQuestions onSubmit={handlePreferencesSubmit} />
       ) : (
@@ -106,7 +115,7 @@ const App: React.FC = () => {
         </main>
       )}
 
-      {preferences && (
+      {hasApiKey && preferences && (
         <footer className="bg-white border-t border-slate-200 p-4">
           <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
         </footer>
