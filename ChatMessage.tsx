@@ -1,6 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Message } from './types.ts';
-import { BotIcon, UserIcon, PrintIcon, CopyIcon } from './Icons.tsx';
+import { BotIcon, UserIcon, PrintIcon, CopyIcon, CheckIcon } from './Icons.tsx';
 
 interface ChatMessageProps {
   message: Message;
@@ -9,20 +9,19 @@ interface ChatMessageProps {
 
 const SimpleMarkdownRenderer: React.FC<{ text: string, isStreaming?: boolean }> = ({ text, isStreaming }) => {
   const renderedHtml = text
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-slate-700 font-medium hover:underline">$1</a>') // Links
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
     .replace(/\*(.*?)\*/g, '<em>$1</em>')           // Italic
-    .replace(/^- (.*$)/gim, '<li>$1</li>')          // List items
-    .replace(/(\<ul>)?(<li>.*<\/li>)(<\/ul>)?/gs, (match, pre, lis, post) => {
-       // Wrap consecutive list items in a single <ul>
-       if (pre) {
-           return match;
-       }
-       return `<ul>${lis}</ul>`;
-    })
-    .replace(/\n/g, '<br />'); // Handle newlines
+    .replace(/^\s*-\s(.*?)$/gm, '<li>$1</li>')      // Unordered list items
+    .replace(/^\s*\d+\.\s(.*?)$/gm, '<li>$1</li>')    // Ordered list items
+    .replace(/(<li>.*?<\/li>)/gs, '<ul>$1</ul>')    // Wrap in <ul>
+    .replace(/<\/ul>\s*<ul>/g, '')                  // Merge adjacent lists
+    .replace(/\n/g, '<br />')                      // Handle newlines
+    .replace(/<br \/>(\s*<ul>)/g, '$1')            // remove br before lists
+    .replace(/(<\/ul>)<br \/>/g, '$1');             // remove br after lists
     
   return (
-    <div className="text-sm whitespace-pre-wrap">
+    <div className="text-sm whitespace-pre-wrap leading-relaxed">
       <div dangerouslySetInnerHTML={{ __html: renderedHtml }} style={{ display: 'inline' }} />
       {isStreaming && <span className="blinking-cursor"></span>}
       <style>{`
@@ -38,6 +37,12 @@ const SimpleMarkdownRenderer: React.FC<{ text: string, isStreaming?: boolean }> 
         @keyframes blink {
           50% { opacity: 0; }
         }
+        ul {
+          padding-left: 20px;
+          margin-top: 8px;
+          margin-bottom: 8px;
+          list-style-type: disc;
+        }
       `}</style>
     </div>
   );
@@ -49,7 +54,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
   const [isCopied, setIsCopied] = useState(false);
 
   const handlePrint = () => {
-    // The logo HTML for printing
     const logoTextHtml = `
       <div class="logo-container">
         <div style="font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 24pt; letter-spacing: 1px;">LiahonaBooks</div>
@@ -81,7 +85,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
       
       printWindow.document.close();
       
-      // This event ensures the window is closed only AFTER the print dialog is handled.
       printWindow.onafterprint = () => {
         printWindow.close();
       };
@@ -91,14 +94,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
         printWindow.print();
       }, 250);
     } else {
-      alert('Could not open print window. Please check your browser\'s popup blocker settings.');
+      // Fix: Changed single quotes to double quotes to prevent a syntax error from the apostrophe in "browser's".
+      alert("Could not open print window. Please check your browser's popup blocker settings.");
     }
   };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.text).then(() => {
       setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+      setTimeout(() => setIsCopied(false), 2000);
     });
   };
 
@@ -112,13 +116,21 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
         )}
       </div>
        {isUser ? (
-        <div className="rounded-lg px-4 py-3 max-w-sm shadow-sm bg-gradient-to-br from-slate-700 to-slate-800 text-white">
+        <div className="rounded-lg px-4 py-3 max-w-lg shadow-sm bg-gradient-to-br from-slate-700 to-slate-800 text-white">
           <p className="text-sm whitespace-pre-wrap">{message.text}</p>
         </div>
       ) : (
         <div className="flex flex-col items-start w-full">
-          <div className="rounded-lg px-4 py-3 max-w-sm shadow-sm bg-white text-slate-800 border border-slate-200">
-             {message.text ? <SimpleMarkdownRenderer text={message.text} isStreaming={isStreaming} /> : <div className="animate-pulse h-4 w-5 bg-slate-300 rounded-full"></div>}
+          <div className="rounded-lg px-4 py-3 max-w-lg shadow-sm bg-white text-slate-800 border border-slate-200">
+             {message.text ? (
+                <SimpleMarkdownRenderer text={message.text} isStreaming={isStreaming} />
+             ) : (
+                <div className="flex items-center space-x-2 text-sm text-slate-500">
+                    <div className="animate-pulse h-2.5 w-2.5 bg-slate-400 rounded-full"></div>
+                    <div className="animate-pulse h-2.5 w-2.5 bg-slate-400 rounded-full" style={{animationDelay: '0.2s'}}></div>
+                    <div className="animate-pulse h-2.5 w-2.5 bg-slate-400 rounded-full" style={{animationDelay: '0.4s'}}></div>
+                </div>
+             )}
           </div>
           {message.text && !isStreaming && (
             <div className="mt-2 flex items-center gap-4">
@@ -128,14 +140,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
                 aria-label="Print this answer"
               >
                 <PrintIcon className="w-5 h-5" />
-                <span>Print Answer</span>
+                <span>Print</span>
               </button>
                <button
                 onClick={handleCopy}
                 className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 rounded px-2 py-1"
                 aria-label="Copy this answer"
               >
-                <CopyIcon className="w-5 h-5" />
+                {isCopied ? <CheckIcon className="w-5 h-5 text-green-600" /> : <CopyIcon className="w-5 h-5" />}
                 <span>{isCopied ? 'Copied!' : 'Copy'}</span>
               </button>
             </div>
