@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Message } from '../types';
 import { BotIcon, UserIcon, PrintIcon, CopyIcon } from './Icons';
 
@@ -12,7 +12,7 @@ const SimpleMarkdownRenderer: React.FC<{ text: string, isStreaming?: boolean }> 
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
     .replace(/\*(.*?)\*/g, '<em>$1</em>')           // Italic
     .replace(/^- (.*$)/gim, '<li>$1</li>')          // List items
-    .replace(/(\<ul>)?(<li>.*<\/li>)(<\/ul>)?/gs, (match, pre, lis, post) => {
+    .replace(/(\<ul>)?(<li>.*<\/li>)(<\/ul>)?/gs, (match, pre, lis) => {
        // Wrap consecutive list items in a single <ul>
        if (pre) {
            return match;
@@ -91,7 +91,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
         printWindow.print();
       }, 250);
     } else {
-      alert('Could not open print window. Please check your browser\'s popup blocker settings.');
+      // FIX: Use double quotes to avoid issues with the apostrophe in "browser's".
+      alert("Could not open print window. Please check your browser's popup blocker settings.");
     }
   };
 

@@ -1,15 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { UserPreferences } from '../types';
 
-const API_KEY = import.meta.VITE_API_KEY;
-
-if (!API_KEY) {
-  // This is a fallback for development; in a real extension, the key would be set in the build environment.
-  console.warn("API_KEY environment variable not set.");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
-
 const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
 - You MUST focus on these top 5 websites: FamilySearch.org, Ancestry.com, MyHeritage, Findmypast, and the US National Archives (archives.gov).
 - When a user asks a general question, provide information that covers multiple relevant sites.
@@ -24,8 +15,11 @@ export const getGenealogyAnswer = async (
   preferences: UserPreferences,
   onStreamUpdate: (chunk: string) => void,
   onStreamEnd: () => void,
+  onApiKeyError: () => void,
 ): Promise<void> => {
   try {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    
     let context_prompt = `The user wants to know about "${prompt}".`;
     if (preferences.website !== "Any Website") {
         context_prompt += `\nTheir question is specifically about the website: ${preferences.website}.`;
@@ -57,6 +51,11 @@ export const getGenealogyAnswer = async (
     if (error instanceof Error) {
         if (error.message.includes('API key not valid')) {
             errorMessage = 'The API key is invalid. Please check your configuration.';
+            onApiKeyError();
+        } else if (error.message.includes('Requested entity was not found.')) {
+            // This specific error indicates a problem with the selected key in the platform.
+            errorMessage = 'Your API Key is invalid or expired. Please select a new one.';
+            onApiKeyError();
         } else {
             errorMessage = error.message;
         }

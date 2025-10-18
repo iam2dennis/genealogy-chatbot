@@ -11,7 +11,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   // For production deployment, we assume the API key is set as an environment variable.
-  const [hasApiKey, setHasApiKey] = useState<boolean>(true);
+  const hasApiKey = true;
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
