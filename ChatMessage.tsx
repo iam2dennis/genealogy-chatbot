@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Message } from '../types';
+import { Message } from './types';
 import { BotIcon, UserIcon, PrintIcon, CopyIcon } from './Icons';
 
 interface ChatMessageProps {
@@ -91,7 +91,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
         printWindow.print();
       }, 250);
     } else {
-      // FIX: Use double quotes to avoid issues with the apostrophe in "browser's".
       alert("Could not open print window. Please check your browser's popup blocker settings.");
     }
   };

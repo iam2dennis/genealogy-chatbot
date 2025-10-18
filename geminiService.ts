@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-import { UserPreferences } from '../types';
+import { UserPreferences } from './types';
 
 const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
 - You MUST focus on these top 5 websites: FamilySearch.org, Ancestry.com, MyHeritage, Findmypast, and the US National Archives (archives.gov).
