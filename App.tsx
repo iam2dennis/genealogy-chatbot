@@ -29,7 +29,7 @@ const App: React.FC = () => {
   const handlePreferencesSubmit = (submittedPreferences: UserPreferences) => {
     setPreferences(submittedPreferences);
     let websiteText = submittedPreferences.website === 'Any Website' ? 'genealogy in general' : `for ${submittedPreferences.website}`;
-    let answerTypeText = submittedPreferences.answerType === 'detailed' ? 'detailed answers' 'step-by-step instructions';
+    let answerTypeText = submittedPreferences.answerType === 'detailed' ? 'detailed answers' : 'step-by-step instructions';
     
     setMessages([
       {
