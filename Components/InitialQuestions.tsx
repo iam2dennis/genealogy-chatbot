@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UserPreferences, WebsiteOption, AnswerTypeOption } from '../types.ts';
+import { UserPreferences, WebsiteOption, AnswerTypeOption } from '../types';
 
 interface InitialQuestionsProps {
   onSubmit: (preferences: UserPreferences) => void;

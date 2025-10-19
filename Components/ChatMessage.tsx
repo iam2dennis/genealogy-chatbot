@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Message } from '../types.ts';
-import { BotIcon, UserIcon, PrintIcon, CopyIcon, CheckIcon } from './Icons.tsx';
+import { Message } from '../types';
+import { BotIcon, UserIcon, PrintIcon, CopyIcon, CheckIcon } from './Icons';
 
 interface ChatMessageProps {
   message: Message;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserPreferences, WebsiteOption } from '../types.ts';
+import { UserPreferences, WebsiteOption } from '../types';
 
 interface SuggestedPromptsProps {
   preferences: UserPreferences;
