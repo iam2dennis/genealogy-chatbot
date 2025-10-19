@@ -1,7 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { UserPreferences } from './types.ts';
 
-// Fix: Switched from using Vite's import.meta.env to process.env.API_KEY for API key access, as required by the coding guidelines. This resolves the TypeScript error regarding 'import.meta.env'.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
