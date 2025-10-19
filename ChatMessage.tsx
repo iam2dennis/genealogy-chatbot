@@ -94,7 +94,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
         printWindow.print();
       }, 250);
     } else {
-      // Fix: Changed single quotes to double quotes to prevent a syntax error from the apostrophe in "browser's".
       alert("Could not open print window. Please check your browser's popup blocker settings.");
     }
   };
