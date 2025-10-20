@@ -7,26 +7,12 @@ import SuggestedPrompts from './components/SuggestedPrompts';
 import { getGenealogyAnswer } from './services/geminiService';
 import { LiahonaBooksLogo, RestartIcon } from './components/Icons';
 
-// FIX: Removed a 'declare global' block that was here. It was causing a TypeScript
-// error because 'window.aistudio' is already declared elsewhere.
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [isApiKeyReady, setIsApiKeyReady] = useState<boolean>(false);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Check if the user has already selected an API key when the app loads.
-    const checkApiKey = async () => {
-      if (window.aistudio) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        setIsApiKeyReady(hasKey);
-      }
-    };
-    checkApiKey();
-  }, []);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -37,22 +23,6 @@ const App: React.FC = () => {
   const handleRestart = () => {
     setMessages([]);
     setPreferences(null);
-    // Also reset the API key check to re-prompt on the initial screen if needed
-    const checkApiKey = async () => {
-      if (window.aistudio) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        setIsApiKeyReady(hasKey);
-      }
-    };
-    checkApiKey();
-  };
-
-  const handleSelectKey = async () => {
-    if (window.aistudio) {
-      await window.aistudio.openSelectKey();
-      // As per platform guidelines, assume success to avoid race conditions.
-      setIsApiKeyReady(true);
-    }
   };
 
   const handlePreferencesSubmit = (submittedPreferences: UserPreferences) => {
@@ -89,7 +59,7 @@ const App: React.FC = () => {
     const onStreamEnd = () => {
       setIsLoading(false);
     };
-
+    
     await getGenealogyAnswer(text, preferences, onStreamUpdate, onStreamEnd);
   }, [preferences]);
 
@@ -121,8 +91,6 @@ const App: React.FC = () => {
       {!preferences ? (
         <InitialQuestions 
           onSubmit={handlePreferencesSubmit}
-          isApiKeyReady={isApiKeyReady}
-          onSelectKey={handleSelectKey}
         />
       ) : (
         <main 
