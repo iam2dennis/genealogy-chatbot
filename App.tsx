@@ -1,11 +1,11 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Message, UserPreferences } from './types.ts';
-import ChatMessage from './components/ChatMessage.tsx';
-import ChatInput from './components/ChatInput.tsx';
-import InitialQuestions from './components/InitialQuestions.tsx';
-import SuggestedPrompts from './components/SuggestedPrompts.tsx';
-import { getGenealogyAnswer } from './services/geminiService.ts';
-import { LiahonaBooksLogo, RestartIcon } from './components/Icons.tsx';
+import { Message, UserPreferences } from './types';
+import ChatMessage from './components/ChatMessage';
+import ChatInput from './components/ChatInput';
+import InitialQuestions from './components/InitialQuestions';
+import SuggestedPrompts from './components/SuggestedPrompts';
+import { getGenealogyAnswer } from './services/geminiService';
+import { LiahonaBooksLogo, RestartIcon } from './components/Icons';
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
