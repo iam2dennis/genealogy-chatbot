@@ -3,17 +3,14 @@ import { UserPreferences, WebsiteOption, AnswerTypeOption } from '../types';
 
 interface InitialQuestionsProps {
   onSubmit: (preferences: UserPreferences) => void;
-  isApiKeyReady: boolean;
-  onSelectKey: () => void;
 }
 
-const InitialQuestions: React.FC<InitialQuestionsProps> = ({ onSubmit, isApiKeyReady, onSelectKey }) => {
+const InitialQuestions: React.FC<InitialQuestionsProps> = ({ onSubmit }) => {
   const [website, setWebsite] = useState<string>(WebsiteOption.ANY);
   const [answerType, setAnswerType] = useState<AnswerTypeOption>(AnswerTypeOption.DETAILED);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isApiKeyReady) return;
     onSubmit({ website, answerType });
   };
 
@@ -31,22 +28,6 @@ const InitialQuestions: React.FC<InitialQuestionsProps> = ({ onSubmit, isApiKeyR
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
-          {!isApiKeyReady ? (
-            <div className="text-left p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-md animate-fade-in">
-                <p className="font-bold text-blue-800">Action Required</p>
-                <p className="text-sm text-blue-700 mt-1">To use the chatbot, please select an API key for your project.</p>
-                <button
-                    type="button"
-                    onClick={onSelectKey}
-                    className="mt-3 w-full p-2 bg-blue-600 text-white rounded-md font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200"
-                >
-                    Select API Key
-                </button>
-                <p className="text-xs text-blue-600 mt-2">
-                    For more info, see the <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="underline font-medium">billing documentation</a>.
-                </p>
-            </div>
-          ) : (
             <div className="animate-fade-in">
               <p className="text-slate-500 mb-6">
                   To get started, please select your preferences below.
@@ -89,13 +70,10 @@ const InitialQuestions: React.FC<InitialQuestionsProps> = ({ onSubmit, isApiKeyR
                 </div>
               </div>
             </div>
-          )}
-
 
           <button
             type="submit"
-            disabled={!isApiKeyReady}
-            className="w-full p-3 bg-slate-600 text-white rounded-md font-semibold hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition duration-200 shadow-lg shadow-slate-600/20 disabled:bg-slate-400 disabled:cursor-not-allowed"
+            className="w-full p-3 bg-slate-600 text-white rounded-md font-semibold hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition duration-200 shadow-lg shadow-slate-600/20"
           >
             Start Chatting
           </button>
