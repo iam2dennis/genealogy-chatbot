@@ -1,15 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 import { UserPreferences } from '../types';
 
-/**
- * Creates a new GoogleGenAI client instance.
- * This ensures the latest API key from the environment is used for each request,
- * which is crucial after the user selects a key via the UI.
- * @returns A new GoogleGenAI client instance.
- */
-const getAiClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
-};
+// This is the standard and secure way to initialize the client for production.
+// It will be created once when the module is loaded, using the API key 
+// from the secure environment variables.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
 - You MUST focus on these top 5 websites: FamilySearch.org, Ancestry.com, MyHeritage, Findmypast, and the US National Archives (archives.gov).
@@ -37,8 +32,7 @@ export const getGenealogyAnswer = async (
         context_prompt += `\nPlease provide a detailed, comprehensive answer.`;
     }
 
-    const client = getAiClient();
-    const responseStream = await client.models.generateContentStream({
+    const responseStream = await ai.models.generateContentStream({
         model: 'gemini-2.5-flash',
         contents: context_prompt,
         config: {
@@ -57,13 +51,7 @@ export const getGenealogyAnswer = async (
     console.error("Error calling Gemini API:", error);
     let errorMessage = "Failed to get response from the AI model.";
     if (error instanceof Error) {
-        if (error.message.includes('API key not valid')) {
-            errorMessage = 'The API key is invalid. Please check your configuration.';
-        } else if (error.message.includes('Requested entity was not found')) {
-            errorMessage = "Your API key is not valid for this project. Please refresh and select a different API key.";
-        } else {
-            errorMessage = error.message;
-        }
+       errorMessage = error.message;
     }
      onStreamUpdate(`Sorry, there was an error. ${errorMessage}`);
   } finally {
