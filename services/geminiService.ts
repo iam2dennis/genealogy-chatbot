@@ -1,20 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 import { UserPreferences } from '../types';
 
-// Initialize ai to null. We will create the instance only when needed.
-let ai: GoogleGenAI | null = null;
-
 /**
- * Gets the singleton instance of the GoogleGenAI client, creating it if it doesn't exist.
- * This lazy initialization prevents crashes on startup if the API key isn't immediately ready.
- * @returns The GoogleGenAI client instance.
+ * Creates a new GoogleGenAI client instance.
+ * This ensures the latest API key from the environment is used for each request,
+ * which is crucial after the user selects a key via the UI.
+ * @returns A new GoogleGenAI client instance.
  */
 const getAiClient = () => {
-  if (!ai) {
-    // This line, which uses process.env, is now only called when a message is sent.
-    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  }
-  return ai;
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
@@ -43,7 +37,6 @@ export const getGenealogyAnswer = async (
         context_prompt += `\nPlease provide a detailed, comprehensive answer.`;
     }
 
-    // Get the AI client using our new lazy-loading function.
     const client = getAiClient();
     const responseStream = await client.models.generateContentStream({
         model: 'gemini-2.5-flash',
@@ -66,6 +59,8 @@ export const getGenealogyAnswer = async (
     if (error instanceof Error) {
         if (error.message.includes('API key not valid')) {
             errorMessage = 'The API key is invalid. Please check your configuration.';
+        } else if (error.message.includes('Requested entity was not found')) {
+            errorMessage = "Your API key is not valid for this project. Please refresh and select a different API key.";
         } else {
             errorMessage = error.message;
         }
