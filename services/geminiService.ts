@@ -1,7 +1,21 @@
 import { GoogleGenAI } from "@google/genai";
 import { UserPreferences } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize ai to null. We will create the instance only when needed.
+let ai: GoogleGenAI | null = null;
+
+/**
+ * Gets the singleton instance of the GoogleGenAI client, creating it if it doesn't exist.
+ * This lazy initialization prevents crashes on startup if the API key isn't immediately ready.
+ * @returns The GoogleGenAI client instance.
+ */
+const getAiClient = () => {
+  if (!ai) {
+    // This line, which uses process.env, is now only called when a message is sent.
+    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  }
+  return ai;
+};
 
 const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
 - You MUST focus on these top 5 websites: FamilySearch.org, Ancestry.com, MyHeritage, Findmypast, and the US National Archives (archives.gov).
@@ -29,7 +43,9 @@ export const getGenealogyAnswer = async (
         context_prompt += `\nPlease provide a detailed, comprehensive answer.`;
     }
 
-    const responseStream = await ai.models.generateContentStream({
+    // Get the AI client using our new lazy-loading function.
+    const client = getAiClient();
+    const responseStream = await client.models.generateContentStream({
         model: 'gemini-2.5-flash',
         contents: context_prompt,
         config: {
