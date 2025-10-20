@@ -16,7 +16,7 @@ export const getGenealogyAnswer = async (
   onStreamEnd: () => void,
 ): Promise<void> => {
   // First, check if the API key is available.
-  if (!import.meta.env.VITE_API_KEY) {
+  if (!process.env.API_KEY) {
     const errorMsg = "Configuration Error: The API key is missing. Please ensure the VITE_API_KEY is set in your project's environment variables.";
     console.error(errorMsg);
     onStreamUpdate(errorMsg);
@@ -29,7 +29,7 @@ export const getGenealogyAnswer = async (
     const { GoogleGenAI } = await import('@google/genai');
     
     // Initialize the AI client here, only when it's needed.
-    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     let context_prompt = `The user wants to know about "${prompt}".`;
     if (preferences.website !== "Any Website") {
