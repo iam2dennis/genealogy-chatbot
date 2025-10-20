@@ -17,7 +17,7 @@ export const getGenealogyAnswer = async (
 ): Promise<void> => {
   // First, check if the API key is available.
   if (!process.env.API_KEY) {
-    const errorMsg = "Configuration Error: The API key is missing. Please ensure the VITE_API_KEY is set in your project's environment variables.";
+    const errorMsg = "Configuration Error: The API key is missing. Please ensure the API_KEY is set in your project's environment variables.";
     console.error(errorMsg);
     onStreamUpdate(errorMsg);
     onStreamEnd();
