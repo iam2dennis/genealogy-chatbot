@@ -1,10 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
 import { UserPreferences } from '../types';
-
-// This is the standard and secure way to initialize the client for production
-// in a Vite project. It uses `import.meta.env` to access environment variables
-// that have been explicitly exposed to the client by prefixing them with `VITE_`.
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
 
 const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
 - You MUST focus on these top 5 websites: FamilySearch.org, Ancestry.com, MyHeritage, Findmypast, and the US National Archives (archives.gov).
@@ -21,7 +15,22 @@ export const getGenealogyAnswer = async (
   onStreamUpdate: (chunk: string) => void,
   onStreamEnd: () => void,
 ): Promise<void> => {
+  // First, check if the API key is available.
+  if (!import.meta.env.VITE_API_KEY) {
+    const errorMsg = "Configuration Error: The API key is missing. Please ensure the VITE_API_KEY is set in your project's environment variables.";
+    console.error(errorMsg);
+    onStreamUpdate(errorMsg);
+    onStreamEnd();
+    return;
+  }
+  
   try {
+    // Dynamically import the GoogleGenAI library only when this function is called.
+    const { GoogleGenAI } = await import('@google/genai');
+    
+    // Initialize the AI client here, only when it's needed.
+    const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
+    
     let context_prompt = `The user wants to know about "${prompt}".`;
     if (preferences.website !== "Any Website") {
         context_prompt += `\nTheir question is specifically about the website: ${preferences.website}.`;
