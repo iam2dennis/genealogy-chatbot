@@ -1,10 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 import { UserPreferences } from '../types';
 
-// This is the standard and secure way to initialize the client for production.
-// It will be created once when the module is loaded, using the API key 
-// from the secure environment variables.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// This is the standard and secure way to initialize the client for production
+// in a Vite project. It uses `import.meta.env` to access environment variables
+// that have been explicitly exposed to the client by prefixing them with `VITE_`.
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_API_KEY });
 
 const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
 - You MUST focus on these top 5 websites: FamilySearch.org, Ancestry.com, MyHeritage, Findmypast, and the US National Archives (archives.gov).
