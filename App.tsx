@@ -28,14 +28,19 @@ const App: React.FC = () => {
   const aiClientRef = useRef<GoogleGenAI | null>(null);
 
   useEffect(() => {
-    try {
-      const client = new GoogleGenAI({});
-      aiClientRef.current = client;
-      setIsAiClientReady(true);
-    } catch (error) {
-      console.error("Fatal Error: Could not initialize Google AI Client.", error);
-      setInitError("Error: Could not connect to the AI service. Please try reloading.");
-    }
+    // Add a small delay to allow the host environment to initialize fully.
+    const timer = setTimeout(() => {
+      try {
+        const client = new GoogleGenAI({});
+        aiClientRef.current = client;
+        setIsAiClientReady(true);
+      } catch (error) {
+        console.error("Fatal Error: Could not initialize Google AI Client.", error);
+        setInitError("Error: Could not connect to the AI service. Please try reloading.");
+      }
+    }, 100); // 100ms delay
+
+    return () => clearTimeout(timer); // Cleanup timer on unmount
   }, []);
 
   useEffect(() => {
