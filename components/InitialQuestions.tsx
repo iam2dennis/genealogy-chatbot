@@ -3,9 +3,10 @@ import { UserPreferences, WebsiteOption, AnswerTypeOption } from '../types';
 
 interface InitialQuestionsProps {
   onSubmit: (preferences: UserPreferences) => void;
+  isAiClientReady: boolean;
 }
 
-const InitialQuestions: React.FC<InitialQuestionsProps> = ({ onSubmit }) => {
+const InitialQuestions: React.FC<InitialQuestionsProps> = ({ onSubmit, isAiClientReady }) => {
   const [website, setWebsite] = useState<string>(WebsiteOption.ANY);
   const [answerType, setAnswerType] = useState<AnswerTypeOption>(AnswerTypeOption.DETAILED);
 
@@ -32,50 +33,53 @@ const InitialQuestions: React.FC<InitialQuestionsProps> = ({ onSubmit }) => {
               <p className="text-slate-500 mb-6">
                   To get started, please select your preferences below.
               </p>
-              <div className="text-left">
-                <label htmlFor="website" className="block text-sm font-medium text-slate-700 mb-2">
-                  Which website are you interested in?
-                </label>
-                <select
-                  id="website"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  className="w-full p-3 border border-slate-300 rounded-md shadow-sm focus:ring-2 focus:ring-slate-500 focus:outline-none transition duration-200"
-                >
-                  {Object.values(WebsiteOption).map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="text-left mt-6">
-                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  How would you like your answers?
-                </label>
-                <div className="flex space-x-4">
-                  <button
-                    type="button"
-                    onClick={() => setAnswerType(AnswerTypeOption.DETAILED)}
-                    className={`flex-1 p-3 border rounded-md text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 ${answerType === 'detailed' ? 'bg-slate-700 text-white border-slate-700 shadow-md' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+              <fieldset disabled={!isAiClientReady}>
+                <div className="text-left">
+                  <label htmlFor="website" className="block text-sm font-medium text-slate-700 mb-2">
+                    Which website are you interested in?
+                  </label>
+                  <select
+                    id="website"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    className="w-full p-3 border border-slate-300 rounded-md shadow-sm focus:ring-2 focus:ring-slate-500 focus:outline-none transition duration-200"
                   >
-                    Detailed Answer
-                  </button>
-                  <button
-                     type="button"
-                     onClick={() => setAnswerType(AnswerTypeOption.STEP_BY_STEP)}
-                     className={`flex-1 p-3 border rounded-md text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 ${answerType === 'step-by-step' ? 'bg-slate-700 text-white border-slate-700 shadow-md' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
-                  >
-                    Step-by-Step
-                  </button>
+                    {Object.values(WebsiteOption).map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
                 </div>
-              </div>
+
+                <div className="text-left mt-6">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    How would you like your answers?
+                  </label>
+                  <div className="flex space-x-4">
+                    <button
+                      type="button"
+                      onClick={() => setAnswerType(AnswerTypeOption.DETAILED)}
+                      className={`flex-1 p-3 border rounded-md text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 ${answerType === 'detailed' ? 'bg-slate-700 text-white border-slate-700 shadow-md' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+                    >
+                      Detailed Answer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAnswerType(AnswerTypeOption.STEP_BY_STEP)}
+                      className={`flex-1 p-3 border rounded-md text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 ${answerType === 'step-by-step' ? 'bg-slate-700 text-white border-slate-700 shadow-md' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+                    >
+                      Step-by-Step
+                    </button>
+                  </div>
+                </div>
+              </fieldset>
             </div>
 
           <button
             type="submit"
-            className="w-full p-3 bg-slate-600 text-white rounded-md font-semibold hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition duration-200 shadow-lg shadow-slate-600/20"
+            disabled={!isAiClientReady}
+            className="w-full p-3 bg-slate-600 text-white rounded-md font-semibold hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition duration-200 shadow-lg shadow-slate-600/20 disabled:bg-slate-400 disabled:cursor-wait"
           >
-            Start Chatting
+            {isAiClientReady ? 'Start Chatting' : 'Initializing AI...'}
           </button>
         </form>
          <style>{`
