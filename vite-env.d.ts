@@ -3,8 +3,10 @@
 // client APIs (like import.meta.env), this removal is safe.
 
 // Added type definition for process.env.API_KEY to support its usage in geminiService.ts
-declare const process: {
-  env: {
+// FIX: Augment the NodeJS namespace to avoid redeclaring the 'process' variable,
+// which resolves the "Cannot redeclare block-scoped variable" error.
+declare namespace NodeJS {
+  interface ProcessEnv {
     API_KEY: string;
-  };
-};
+  }
+}
