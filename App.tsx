@@ -1,62 +1,32 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import type { GoogleGenAI } from '@google/genai';
 import { Message, UserPreferences } from './types';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import InitialQuestions from './components/InitialQuestions';
 import SuggestedPrompts from './components/SuggestedPrompts';
+import { getGenealogyAnswer, initializeGenAI } from './services/geminiService';
 import { LiahonaBooksLogo, RestartIcon } from './components/Icons';
 
-const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
-- You MUST focus on these top 5 websites: FamilySearch.org, Ancestry.com, MyHeritage, Findmypast, and the US National Archives (archives.gov).
-- When a user asks a general question, provide information that covers multiple relevant sites.
-- You must be able to discuss both major and lesser-known online sources for genealogy records (e.g., state archives, historical societies, specific record collections like the Freedmen's Bureau).
-- You are designed to be embedded in a Chrome Extension. Keep answers concise and well-formatted for a small screen. Use markdown for lists and emphasis.
-- You will be given user preferences for a specific website and a desired answer format (detailed vs. step-by-step). You must tailor your response to these preferences.
-- At the end of every response, you MUST include a section titled "--- Sources ---".
-- In this section, list the primary websites or resources you used to formulate your answer, and provide a one-sentence explanation for why each source is relevant. For example: "FamilySearch.org: A primary source for vital records and user-submitted family trees."`;
-
-
 const App: React.FC = () => {
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const [initError, setInitError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [isAiClientReady, setIsAiClientReady] = useState<boolean>(false);
-  const [initError, setInitError] = useState<string | null>(null);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const aiClientRef = useRef<GoogleGenAI | null>(null);
 
   useEffect(() => {
-    const initializeAiWithRetry = async (retries = 3, delay = 250) => {
-      for (let i = 0; i < retries; i++) {
-        try {
-          // Dynamically import the library to prevent startup crashes.
-          const { GoogleGenAI } = await import('@google/genai');
-          const client = new GoogleGenAI({});
-          
-          // If we reach here, initialization was successful.
-          aiClientRef.current = client;
-          setIsAiClientReady(true);
-          setInitError(null); // Clear any previous errors.
-          return; // Exit the loop on success.
-
-        } catch (error) {
-          console.warn(`AI initialization attempt ${i + 1} of ${retries} failed. Retrying...`, error);
-          if (i < retries - 1) {
-            // Wait with an increasing delay before the next attempt.
-            await new Promise(res => setTimeout(res, delay * (i + 1)));
-          } else {
-            // If all retries fail, set the final error message.
-            console.error("Fatal Error: Could not initialize Google AI Client after multiple retries.", error);
-            setInitError("Error: Could not connect to the AI service. Please try reloading.");
-          }
-        }
-      }
-    };
-
-    initializeAiWithRetry();
+    try {
+      initializeGenAI();
+      setIsInitialized(true);
+    } catch (error) {
+      console.error("Initialization error:", error);
+      const message = error instanceof Error ? error.message : "An unknown error occurred during initialization.";
+      setInitError(`We couldn't connect to the AI service. Please check your connection or try refreshing the page.\n\nError: ${message}`);
+    }
   }, []);
+
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -82,49 +52,6 @@ const App: React.FC = () => {
     ]);
   };
 
-  const getGenealogyAnswer = useCallback(async (
-    prompt: string,
-    prefs: UserPreferences,
-  ) => {
-    if (!aiClientRef.current) {
-      throw new Error("AI Client is not ready. Please wait a moment and try again.");
-    }
-    try {
-      const client = aiClientRef.current;
-
-      let context_prompt = `The user wants to know about "${prompt}".`;
-      if (prefs.website !== "Any Website") {
-          context_prompt += `\nTheir question is specifically about the website: ${prefs.website}.`;
-      }
-      if (prefs.answerType === 'step-by-step') {
-          context_prompt += `\nPlease provide the answer as step-by-step instructions. The instructions should be clear, numbered, and easy to follow.`;
-      } else {
-          context_prompt += `\nPlease provide a detailed, comprehensive answer.`;
-      }
-
-      const responseStream = await client.models.generateContentStream({
-          model: 'gemini-2.5-flash',
-          contents: context_prompt,
-          config: {
-              systemInstruction: systemInstruction,
-              temperature: 0.5,
-              topP: 0.95,
-              topK: 64,
-          },
-      });
-      
-      return responseStream;
-
-    } catch (error) {
-      console.error("Error calling Gemini API:", error);
-      let errorMessage = "Failed to get response from the AI model.";
-      if (error instanceof Error) {
-        errorMessage = `An error occurred: ${error.message}`;
-      }
-      throw new Error(`Sorry, there was an error. ${errorMessage}`);
-    }
-  }, []);
-
   const handleSendMessage = useCallback(async (text: string) => {
     if (!text.trim() || !preferences) return;
 
@@ -132,31 +59,41 @@ const App: React.FC = () => {
     setMessages(prev => [...prev, userMessage, { role: 'model', text: '' }]);
     setIsLoading(true);
 
-    try {
-      const stream = await getGenealogyAnswer(text, preferences);
-      for await (const chunk of stream) {
-        setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage.role === 'model') {
-            lastMessage.text += chunk.text;
-          }
-          return newMessages;
-        });
-      }
-    } catch (error) {
-       setMessages(prev => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage.role === 'model') {
-            lastMessage.text = error instanceof Error ? error.message : String(error);
-          }
-          return newMessages;
-        });
-    } finally {
+    const onStreamUpdate = (chunk: string) => {
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastMessage = newMessages[newMessages.length - 1];
+        if (lastMessage.role === 'model') {
+          lastMessage.text += chunk;
+        }
+        return newMessages;
+      });
+    };
+
+    const onStreamEnd = () => {
       setIsLoading(false);
-    }
-  }, [preferences, getGenealogyAnswer]);
+    };
+    
+    await getGenealogyAnswer(text, preferences, onStreamUpdate, onStreamEnd);
+  }, [preferences]);
+  
+  if (initError) {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-slate-100 p-8 text-center">
+        <h1 className="text-2xl font-bold text-red-600 mb-4">Initialization Failed</h1>
+        <p className="whitespace-pre-wrap text-slate-700 max-w-md">{initError}</p>
+      </div>
+    );
+  }
+
+  if (!isInitialized) {
+    return (
+       <div className="flex flex-col h-screen items-center justify-center bg-slate-100">
+         <LiahonaBooksLogo className="w-48 text-slate-400 animate-pulse" />
+         <p className="text-slate-500 mt-4">Initializing AI Research Assistant...</p>
+       </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-slate-100 font-sans antialiased max-w-3xl mx-auto shadow-2xl rounded-lg">
@@ -186,8 +123,6 @@ const App: React.FC = () => {
       {!preferences ? (
         <InitialQuestions 
           onSubmit={handlePreferencesSubmit}
-          isAiClientReady={isAiClientReady}
-          initError={initError}
         />
       ) : (
         <main 
