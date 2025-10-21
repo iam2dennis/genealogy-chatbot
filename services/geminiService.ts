@@ -4,8 +4,38 @@ import { UserPreferences } from '../types';
 let ai: GoogleGenAI;
 
 export const initializeGenAI = () => {
-  // Initialize the AI client.
-  // The API key is injected by the environment and is assumed to be available.
+  // Add diagnostic logging to help debug the API key issue.
+  console.log("--- Gemini Service Initialization ---");
+  
+  // Check for the 'process' object
+  if (typeof process === 'undefined') {
+    console.error("`process` object is not defined. This is expected in some browser environments if not polyfilled.");
+  } else {
+    console.log("`process` object is defined.");
+    
+    // Check for 'process.env'
+    if (typeof process.env === 'undefined') {
+      console.error("`process.env` is not defined.");
+    } else {
+      console.log("`process.env` object is defined.");
+      console.log("Keys in `process.env`:", Object.keys(process.env));
+      
+      // Check for the API_KEY specifically
+      const apiKey = process.env.API_KEY;
+      if (apiKey) {
+        console.log("API_KEY found in `process.env`.");
+        console.log(`API_KEY length: ${apiKey.length}.`);
+      } else {
+        console.error("API_KEY is NOT found in `process.env`.");
+      }
+    }
+  }
+  console.log("-------------------------------------");
+
+
+  // The API key is injected by the environment.
+  // The GoogleGenAI constructor will read `process.env.API_KEY` and throw
+  // its own error if the key is not available, which is handled in App.tsx.
   ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
