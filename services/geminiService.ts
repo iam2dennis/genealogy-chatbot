@@ -1,6 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 import { UserPreferences } from '../types';
 
+let ai: GoogleGenAI;
+
+export const initializeGenAI = () => {
+  // Explicitly check if the API key is available from the environment.
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY is not available in the environment. This is a configuration issue.");
+  }
+  ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+};
+
+
 const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
 - You MUST focus on these top 5 websites: FamilySearch.org, Ancestry.com, MyHeritage, Findmypast, and the US National Archives (archives.gov).
 - When a user asks a general question, provide information that covers multiple relevant sites.
@@ -17,8 +28,9 @@ export const getGenealogyAnswer = async (
   onStreamEnd: () => void,
 ): Promise<void> => {
   try {
-    // Initialize the AI client here, only when it's needed.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    if (!ai) {
+      throw new Error("Gemini AI client has not been initialized. Please call initializeGenAI() first.");
+    }
     
     let context_prompt = `The user wants to know about "${prompt}".`;
     if (preferences.website !== "Any Website") {
