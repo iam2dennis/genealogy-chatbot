@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import type { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import { Message, UserPreferences } from './types';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
@@ -22,25 +22,21 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [isAiClientReady, setIsAiClientReady] = useState<boolean>(false);
+  const [initError, setInitError] = useState<string | null>(null);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const aiClientRef = useRef<GoogleGenAI | null>(null);
 
-  // Initialize the AI client once when the component mounts.
   useEffect(() => {
-    const initializeAi = async () => {
-      try {
-        const { GoogleGenAI } = await import('@google/genai');
-        const client = new GoogleGenAI({});
-        aiClientRef.current = client;
-        setIsAiClientReady(true);
-      } catch (error) {
-        console.error("Fatal Error: Could not initialize Google AI Client.", error);
-        // In a real app, you might set an error state to show a message.
-      }
-    };
-    initializeAi();
-  }, []); // Empty dependency array ensures this runs only once on mount.
+    try {
+      const client = new GoogleGenAI({});
+      aiClientRef.current = client;
+      setIsAiClientReady(true);
+    } catch (error) {
+      console.error("Fatal Error: Could not initialize Google AI Client.", error);
+      setInitError("Error: Could not connect to the AI service. Please try reloading.");
+    }
+  }, []);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -171,6 +167,7 @@ const App: React.FC = () => {
         <InitialQuestions 
           onSubmit={handlePreferencesSubmit}
           isAiClientReady={isAiClientReady}
+          initError={initError}
         />
       ) : (
         <main 
