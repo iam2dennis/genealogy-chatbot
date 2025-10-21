@@ -1,11 +1,21 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import type { GoogleGenAI } from '@google/genai';
 import { Message, UserPreferences } from './types';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import InitialQuestions from './components/InitialQuestions';
 import SuggestedPrompts from './components/SuggestedPrompts';
-import { getGenealogyAnswer } from './services/geminiService';
 import { LiahonaBooksLogo, RestartIcon } from './components/Icons';
+
+const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
+- You MUST focus on these top 5 websites: FamilySearch.org, Ancestry.com, MyHeritage, Findmypast, and the US National Archives (archives.gov).
+- When a user asks a general question, provide information that covers multiple relevant sites.
+- You must be able to discuss both major and lesser-known online sources for genealogy records (e.g., state archives, historical societies, specific record collections like the Freedmen's Bureau).
+- You are designed to be embedded in a Chrome Extension. Keep answers concise and well-formatted for a small screen. Use markdown for lists and emphasis.
+- You will be given user preferences for a specific website and a desired answer format (detailed vs. step-by-step). You must tailor your response to these preferences.
+- At the end of every response, you MUST include a section titled "--- Sources ---".
+- In this section, list the primary websites or resources you used to formulate your answer, and provide a one-sentence explanation for why each source is relevant. For example: "FamilySearch.org: A primary source for vital records and user-submitted family trees."`;
+
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -13,6 +23,18 @@ const App: React.FC = () => {
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const aiClientRef = useRef<GoogleGenAI | null>(null);
+
+  // Dynamically import and initialize the AI client, storing it in a ref.
+  const getAiClient = useCallback(async () => {
+    if (aiClientRef.current) {
+      return aiClientRef.current;
+    }
+    const { GoogleGenAI } = await import('@google/genai');
+    const client = new GoogleGenAI({});
+    aiClientRef.current = client;
+    return client;
+  }, []);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -38,6 +60,47 @@ const App: React.FC = () => {
     ]);
   };
 
+  const getGenealogyAnswer = useCallback(async (
+    prompt: string,
+    prefs: UserPreferences,
+  ) => {
+    try {
+      const client = await getAiClient();
+
+      let context_prompt = `The user wants to know about "${prompt}".`;
+      if (prefs.website !== "Any Website") {
+          context_prompt += `\nTheir question is specifically about the website: ${prefs.website}.`;
+      }
+      if (prefs.answerType === 'step-by-step') {
+          context_prompt += `\nPlease provide the answer as step-by-step instructions. The instructions should be clear, numbered, and easy to follow.`;
+      } else {
+          context_prompt += `\nPlease provide a detailed, comprehensive answer.`;
+      }
+
+      const responseStream = await client.models.generateContentStream({
+          model: 'gemini-2.5-flash',
+          contents: context_prompt,
+          config: {
+              systemInstruction: systemInstruction,
+              temperature: 0.5,
+              topP: 0.95,
+              topK: 64,
+          },
+      });
+      
+      return responseStream;
+
+    } catch (error) {
+      console.error("Error calling Gemini API:", error);
+      let errorMessage = "Failed to get response from the AI model.";
+      if (error instanceof Error) {
+        errorMessage = `An error occurred: ${error.message}`;
+      }
+      // Re-throw a user-friendly error
+      throw new Error(`Sorry, there was an error. ${errorMessage}`);
+    }
+  }, [getAiClient]);
+
   const handleSendMessage = useCallback(async (text: string) => {
     if (!text.trim() || !preferences) return;
 
@@ -45,23 +108,31 @@ const App: React.FC = () => {
     setMessages(prev => [...prev, userMessage, { role: 'model', text: '' }]);
     setIsLoading(true);
 
-    const onStreamUpdate = (chunk: string) => {
-      setMessages(prev => {
-        const newMessages = [...prev];
-        const lastMessage = newMessages[newMessages.length - 1];
-        if (lastMessage.role === 'model') {
-          lastMessage.text += chunk;
-        }
-        return newMessages;
-      });
-    };
-
-    const onStreamEnd = () => {
+    try {
+      const stream = await getGenealogyAnswer(text, preferences);
+      for await (const chunk of stream) {
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage.role === 'model') {
+            lastMessage.text += chunk.text;
+          }
+          return newMessages;
+        });
+      }
+    } catch (error) {
+       setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage.role === 'model') {
+            lastMessage.text = error instanceof Error ? error.message : String(error);
+          }
+          return newMessages;
+        });
+    } finally {
       setIsLoading(false);
-    };
-    
-    await getGenealogyAnswer(text, preferences, onStreamUpdate, onStreamEnd);
-  }, [preferences]);
+    }
+  }, [preferences, getGenealogyAnswer]);
 
   return (
     <div className="flex flex-col h-screen bg-slate-100 font-sans antialiased max-w-3xl mx-auto shadow-2xl rounded-lg">
