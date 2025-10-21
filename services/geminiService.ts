@@ -4,10 +4,8 @@ import { UserPreferences } from '../types';
 let ai: GoogleGenAI;
 
 export const initializeGenAI = () => {
-  // Explicitly check if the API key is available from the environment.
-  if (!process.env.API_KEY) {
-    throw new Error("API_KEY is not available in the environment. This is a configuration issue.");
-  }
+  // Initialize the AI client.
+  // The API key is injected by the environment and is assumed to be available.
   ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
