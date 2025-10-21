@@ -28,25 +28,34 @@ const App: React.FC = () => {
   const aiClientRef = useRef<GoogleGenAI | null>(null);
 
   useEffect(() => {
-    // This timer ensures the host environment (like AI Studio) has time to initialize
-    // before we attempt to load and instantiate the AI client.
-    const timer = setTimeout(() => {
-      const initializeAi = async () => {
+    const initializeAiWithRetry = async (retries = 3, delay = 250) => {
+      for (let i = 0; i < retries; i++) {
         try {
-          // Dynamically import the library ONLY when we are ready to use it.
+          // Dynamically import the library to prevent startup crashes.
           const { GoogleGenAI } = await import('@google/genai');
           const client = new GoogleGenAI({});
+          
+          // If we reach here, initialization was successful.
           aiClientRef.current = client;
           setIsAiClientReady(true);
-        } catch (error) {
-          console.error("Fatal Error: Could not initialize Google AI Client.", error);
-          setInitError("Error: Could not connect to the AI service. Please try reloading.");
-        }
-      };
-      initializeAi();
-    }, 500); // A robust 500ms delay
+          setInitError(null); // Clear any previous errors.
+          return; // Exit the loop on success.
 
-    return () => clearTimeout(timer); // Cleanup timer on unmount
+        } catch (error) {
+          console.warn(`AI initialization attempt ${i + 1} of ${retries} failed. Retrying...`, error);
+          if (i < retries - 1) {
+            // Wait with an increasing delay before the next attempt.
+            await new Promise(res => setTimeout(res, delay * (i + 1)));
+          } else {
+            // If all retries fail, set the final error message.
+            console.error("Fatal Error: Could not initialize Google AI Client after multiple retries.", error);
+            setInitError("Error: Could not connect to the AI service. Please try reloading.");
+          }
+        }
+      }
+    };
+
+    initializeAiWithRetry();
   }, []);
 
   useEffect(() => {
