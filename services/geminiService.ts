@@ -15,21 +15,13 @@ export const getGenealogyAnswer = async (
   onStreamUpdate: (chunk: string) => void,
   onStreamEnd: () => void,
 ): Promise<void> => {
-  // First, check if the API key is available.
-  if (!process.env.API_KEY) {
-    const errorMsg = "Configuration Error: The API key is missing. Please ensure the API_KEY is set in your project's environment variables.";
-    console.error(errorMsg);
-    onStreamUpdate(errorMsg);
-    onStreamEnd();
-    return;
-  }
-  
   try {
     // Dynamically import the GoogleGenAI library only when this function is called.
     const { GoogleGenAI } = await import('@google/genai');
     
-    // Initialize the AI client here, only when it's needed.
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Initialize the AI client without an API key.
+    // The platform environment will handle authentication automatically.
+    const ai = new GoogleGenAI({});
     
     let context_prompt = `The user wants to know about "${prompt}".`;
     if (preferences.website !== "Any Website") {
@@ -60,7 +52,7 @@ export const getGenealogyAnswer = async (
     console.error("Error calling Gemini API:", error);
     let errorMessage = "Failed to get response from the AI model.";
     if (error instanceof Error) {
-       errorMessage = error.message;
+       errorMessage = `An error occurred: ${error.message}`;
     }
      onStreamUpdate(`Sorry, there was an error. ${errorMessage}`);
   } finally {
