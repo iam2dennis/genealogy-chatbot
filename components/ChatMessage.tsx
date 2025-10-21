@@ -14,7 +14,10 @@ const SimpleMarkdownRenderer: React.FC<{ text: string, isStreaming?: boolean }> 
     .replace(/\*(.*?)\*/g, '<em>$1</em>')           // Italic
     .replace(/^\s*-\s(.*?)$/gm, '<li>$1</li>')      // Unordered list items
     .replace(/^\s*\d+\.\s(.*?)$/gm, '<li>$1</li>')    // Ordered list items
-    .replace(/(<li>.*?<\/li>)/gs, '<ul>$1</ul>')    // Wrap in <ul>
+    // FIX: Join list items before wrapping them in a single <ul>.
+    .replace(/<\/li>\s*<li>/g, '</li><li>')
+    // FIX: Removed 's' flag to prevent incorrect grouping of list items.
+    .replace(/(<li>.*?<\/li>)/g, '<ul>$1</ul>')    // Wrap in <ul>
     .replace(/<\/ul>\s*<ul>/g, '')                  // Merge adjacent lists
     .replace(/\n/g, '<br />')                      // Handle newlines
     .replace(/<br \/>(\s*<ul>)/g, '$1')            // remove br before lists
