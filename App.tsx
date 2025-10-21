@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { GoogleGenAI } from '@google/genai';
+import type { GoogleGenAI } from '@google/genai';
 import { Message, UserPreferences } from './types';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
@@ -28,17 +28,23 @@ const App: React.FC = () => {
   const aiClientRef = useRef<GoogleGenAI | null>(null);
 
   useEffect(() => {
-    // Add a small delay to allow the host environment to initialize fully.
+    // This timer ensures the host environment (like AI Studio) has time to initialize
+    // before we attempt to load and instantiate the AI client.
     const timer = setTimeout(() => {
-      try {
-        const client = new GoogleGenAI({});
-        aiClientRef.current = client;
-        setIsAiClientReady(true);
-      } catch (error) {
-        console.error("Fatal Error: Could not initialize Google AI Client.", error);
-        setInitError("Error: Could not connect to the AI service. Please try reloading.");
-      }
-    }, 100); // 100ms delay
+      const initializeAi = async () => {
+        try {
+          // Dynamically import the library ONLY when we are ready to use it.
+          const { GoogleGenAI } = await import('@google/genai');
+          const client = new GoogleGenAI({});
+          aiClientRef.current = client;
+          setIsAiClientReady(true);
+        } catch (error) {
+          console.error("Fatal Error: Could not initialize Google AI Client.", error);
+          setInitError("Error: Could not connect to the AI service. Please try reloading.");
+        }
+      };
+      initializeAi();
+    }, 500); // A robust 500ms delay
 
     return () => clearTimeout(timer); // Cleanup timer on unmount
   }, []);
