@@ -21,20 +21,26 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  const [isAiClientReady, setIsAiClientReady] = useState<boolean>(false);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const aiClientRef = useRef<GoogleGenAI | null>(null);
 
-  // Dynamically import and initialize the AI client, storing it in a ref.
-  const getAiClient = useCallback(async () => {
-    if (aiClientRef.current) {
-      return aiClientRef.current;
-    }
-    const { GoogleGenAI } = await import('@google/genai');
-    const client = new GoogleGenAI({});
-    aiClientRef.current = client;
-    return client;
-  }, []);
+  // Initialize the AI client once when the component mounts.
+  useEffect(() => {
+    const initializeAi = async () => {
+      try {
+        const { GoogleGenAI } = await import('@google/genai');
+        const client = new GoogleGenAI({});
+        aiClientRef.current = client;
+        setIsAiClientReady(true);
+      } catch (error) {
+        console.error("Fatal Error: Could not initialize Google AI Client.", error);
+        // In a real app, you might set an error state to show a message.
+      }
+    };
+    initializeAi();
+  }, []); // Empty dependency array ensures this runs only once on mount.
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -64,8 +70,11 @@ const App: React.FC = () => {
     prompt: string,
     prefs: UserPreferences,
   ) => {
+    if (!aiClientRef.current) {
+      throw new Error("AI Client is not ready. Please wait a moment and try again.");
+    }
     try {
-      const client = await getAiClient();
+      const client = aiClientRef.current;
 
       let context_prompt = `The user wants to know about "${prompt}".`;
       if (prefs.website !== "Any Website") {
@@ -96,10 +105,9 @@ const App: React.FC = () => {
       if (error instanceof Error) {
         errorMessage = `An error occurred: ${error.message}`;
       }
-      // Re-throw a user-friendly error
       throw new Error(`Sorry, there was an error. ${errorMessage}`);
     }
-  }, [getAiClient]);
+  }, []);
 
   const handleSendMessage = useCallback(async (text: string) => {
     if (!text.trim() || !preferences) return;
@@ -162,6 +170,7 @@ const App: React.FC = () => {
       {!preferences ? (
         <InitialQuestions 
           onSubmit={handlePreferencesSubmit}
+          isAiClientReady={isAiClientReady}
         />
       ) : (
         <main 
