@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import type { GoogleGenAI } from '@google/genai';
 import { UserPreferences } from '../types';
 
 const systemInstruction = `You are an expert genealogy research assistant chatbot. Your purpose is to answer questions about 'how to do genealogy' and provide information about top genealogy websites. 
@@ -10,8 +10,19 @@ const systemInstruction = `You are an expert genealogy research assistant chatbo
 - At the end of every response, you MUST include a section titled "--- Sources ---".
 - In this section, list the primary websites or resources you used to formulate your answer, and provide a one-sentence explanation for why each source is relevant. For example: "FamilySearch.org: A primary source for vital records and user-submitted family trees."`;
 
-// Initialize the AI client once. The platform environment will handle authentication automatically.
-const ai = new GoogleGenAI({});
+// Declare a variable to hold the AI client instance.
+let ai: GoogleGenAI | null = null;
+
+// This function will dynamically import and initialize the AI client on the first call.
+const getAiClient = async () => {
+  if (!ai) {
+    // Dynamically import the library only when it's first needed.
+    // This prevents the library from running on startup and crashing the app.
+    const { GoogleGenAI } = await import('@google/genai');
+    ai = new GoogleGenAI({});
+  }
+  return ai;
+};
 
 export const getGenealogyAnswer = async (
   prompt: string,
@@ -20,6 +31,9 @@ export const getGenealogyAnswer = async (
   onStreamEnd: () => void,
 ): Promise<void> => {
   try {
+    // Await the client initialization.
+    const client = await getAiClient();
+
     let context_prompt = `The user wants to know about "${prompt}".`;
     if (preferences.website !== "Any Website") {
         context_prompt += `\nTheir question is specifically about the website: ${preferences.website}.`;
@@ -30,7 +44,7 @@ export const getGenealogyAnswer = async (
         context_prompt += `\nPlease provide a detailed, comprehensive answer.`;
     }
 
-    const responseStream = await ai.models.generateContentStream({
+    const responseStream = await client.models.generateContentStream({
         model: 'gemini-2.5-flash',
         contents: context_prompt,
         config: {
