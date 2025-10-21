@@ -4,9 +4,10 @@ import { UserPreferences, WebsiteOption, AnswerTypeOption } from '../types';
 interface InitialQuestionsProps {
   onSubmit: (preferences: UserPreferences) => void;
   isAiClientReady: boolean;
+  initError: string | null;
 }
 
-const InitialQuestions: React.FC<InitialQuestionsProps> = ({ onSubmit, isAiClientReady }) => {
+const InitialQuestions: React.FC<InitialQuestionsProps> = ({ onSubmit, isAiClientReady, initError }) => {
   const [website, setWebsite] = useState<string>(WebsiteOption.ANY);
   const [answerType, setAnswerType] = useState<AnswerTypeOption>(AnswerTypeOption.DETAILED);
 
@@ -14,6 +15,18 @@ const InitialQuestions: React.FC<InitialQuestionsProps> = ({ onSubmit, isAiClien
     e.preventDefault();
     onSubmit({ website, answerType });
   };
+
+  if (initError) {
+    return (
+      <div className="p-6 flex flex-col justify-center items-center h-full text-center bg-red-50 text-red-800">
+        <div className="w-full max-w-md">
+           <h2 className="text-2xl font-bold mb-4">Initialization Failed</h2>
+           <p className="mb-4">We couldn't connect to the AI service. Please check your connection or try refreshing the page.</p>
+           <p className="text-sm bg-red-100 border border-red-200 p-3 rounded-md">{initError}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 flex flex-col justify-center items-center h-full text-center bg-slate-50">
