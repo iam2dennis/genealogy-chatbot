@@ -11,6 +11,7 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  const [isAiReady, setIsAiReady] = useState<boolean>(false);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
@@ -19,6 +20,15 @@ const App: React.FC = () => {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    // This check simulates initialization and ensures the API key is available.
+    if (process.env.API_KEY) {
+      setIsAiReady(true);
+    } else {
+      console.error("API Key not found. The chatbot will be disabled.");
+    }
+  }, []);
   
   const handleRestart = () => {
     setMessages([]);
@@ -91,6 +101,7 @@ const App: React.FC = () => {
       {!preferences ? (
         <InitialQuestions 
           onSubmit={handlePreferencesSubmit}
+          isAiReady={isAiReady}
         />
       ) : (
         <main 
