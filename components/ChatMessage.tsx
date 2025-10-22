@@ -12,11 +12,19 @@ const SimpleMarkdownRenderer: React.FC<{ text: string, isStreaming?: boolean }> 
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-slate-700 font-medium hover:underline">$1</a>') // Links
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
     .replace(/\*(.*?)\*/g, '<em>$1</em>')           // Italic
-    .replace(/^\s*-\s(.*?)$/gm, '<li>$1</li>')      // Unordered list items
-    .replace(/^\s*\d+\.\s(.*?)$/gm, '<li>$1</li>')    // Ordered list items
-    .replace(/(<li>.*?<\/li>)/gs, '<ul>$1</ul>')    // Wrap in <ul>
-    .replace(/<\/ul>\s*<ul>/g, '')                  // Merge adjacent lists
-    .replace(/\n/g, '<br />');                      // Handle newlines
+    // Process unordered lists
+    .replace(/((?:^|\n)\s*-\s.*)+/g, (match) => {
+        const items = match.trim().split('\n').map(line => `<li>${line.replace(/^\s*-\s/, '')}</li>`).join('');
+        return `<ul>${items}</ul>`;
+    })
+    // Process ordered lists
+    .replace(/((?:^|\n)\s*\d+\.\s.*)+/g, (match) => {
+        const items = match.trim().split('\n').map(line => `<li>${line.replace(/^\s*\d+\.\s/, '')}</li>`).join('');
+        return `<ol>${items}</ol>`;
+    })
+    .replace(/\n/g, '<br />')
+    .replace(/<br \/>(\s*<(?:ul|ol)>)/g, '$1') // remove <br> before lists
+    .replace(/(<\/(?:ul|ol)>)\s*<br \/>/g, '$1'); // remove <br> after lists
     
   return (
     <div className="text-sm whitespace-pre-wrap leading-relaxed">
@@ -35,11 +43,16 @@ const SimpleMarkdownRenderer: React.FC<{ text: string, isStreaming?: boolean }> 
         @keyframes blink {
           50% { opacity: 0; }
         }
-        ul {
+        ul, ol {
           padding-left: 20px;
           margin-top: 8px;
           margin-bottom: 8px;
+        }
+        ul {
           list-style-type: disc;
+        }
+        ol {
+            list-style-type: decimal;
         }
       `}</style>
     </div>
@@ -72,7 +85,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
           .logo-container { text-align: center; margin-bottom: 20px; }
           hr { border: none; border-top: 1px solid #e2e8f0; margin: 20px 0; }
           p, div, span { word-wrap: break-word; }
-          ul { padding-left: 20px; }
+          ul, ol { padding-left: 20px; }
         </style>
       `);
       printWindow.document.write('</head><body>');
