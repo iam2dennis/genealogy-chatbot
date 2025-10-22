@@ -4,58 +4,10 @@ import { UserPreferences } from '../types';
 let ai: GoogleGenAI;
 
 export const initializeGenAI = () => {
-  // This function is designed to thoroughly inspect the environment and find the API key.
-  console.log("--- Environment Diagnostics ---");
-  
-  let apiKey: string | undefined = undefined;
-
-  // 1. Standard check based on instructions
-  if (typeof process !== 'undefined' && process.env) {
-    console.log("`process.env` object found.");
-    apiKey = process.env.API_KEY;
-  } else {
-    console.log("`process.env` is not available in this environment.");
-  }
-
-  // 2. If key not found, inspect the global scope (window) for clues
-  if (!apiKey) {
-    console.log("API key not found via `process.env`. Inspecting `window` object for alternatives.");
-    try {
-      // We are looking for anything that might contain secrets or environment variables.
-      const potentialSources: string[] = [];
-      for (const key in window) {
-        if (key.toLowerCase().includes('env') || key.toLowerCase().includes('config') || key.toLowerCase().includes('api_key') || key.toLowerCase().includes('aistudio')) {
-          potentialSources.push(key);
-        }
-      }
-      if (potentialSources.length > 0) {
-        console.log("Found potential API key sources on `window` object:", potentialSources);
-        // Log the contents of these potential sources if they are simple objects
-        potentialSources.forEach(key => {
-           try {
-             const prop = (window as any)[key];
-             if (typeof prop === 'object' && prop !== null) {
-                console.log(`Contents of window.${key}:`, Object.keys(prop));
-             }
-           } catch(e) {
-             // ignore security errors for certain window properties
-           }
-        });
-      } else {
-        console.log("No obvious API key sources found on `window` object.");
-      }
-    } catch (e) {
-      console.error("Error inspecting `window` object:", e);
-    }
-  }
-
-  // 3. Attempt to initialize, which will throw a clear error if apiKey is still missing.
-  // The diagnostics above are the important part for the next step.
-  console.log("Attempting to initialize GoogleGenAI...");
-  console.log("-----------------------------");
-  
-  // This will use the apiKey found (or undefined) and throw the expected error if it's missing.
-  ai = new GoogleGenAI({ apiKey });
+  // The UI layer is now responsible for ensuring the API key is available before calling this.
+  // The platform is expected to polyfill `process.env.API_KEY` after a key is selected.
+  // The GoogleGenAI constructor will throw an error if the API key is not found.
+  ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 
