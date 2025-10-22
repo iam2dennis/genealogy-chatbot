@@ -7,9 +7,9 @@ interface ChatMessageProps {
   isStreaming?: boolean;
 }
 
-const SimpleMarkdownRenderer: React.FC<{ text: string, isStreaming?: boolean }> = ({ text, isStreaming }) => {
-  const renderedHtml = text
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-slate-700 font-medium hover:underline">$1</a>') // Links
+const renderMarkdown = (text: string): string => {
+  return text
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>') // Links
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
     .replace(/\*(.*?)\*/g, '<em>$1</em>')           // Italic
     // Process unordered lists
@@ -25,6 +25,10 @@ const SimpleMarkdownRenderer: React.FC<{ text: string, isStreaming?: boolean }> 
     .replace(/\n/g, '<br />')
     .replace(/<br \/>(\s*<(?:ul|ol)>)/g, '$1') // remove <br> before lists
     .replace(/(<\/(?:ul|ol)>)\s*<br \/>/g, '$1'); // remove <br> after lists
+};
+
+const SimpleMarkdownRenderer: React.FC<{ text: string, isStreaming?: boolean }> = ({ text, isStreaming }) => {
+  const renderedHtml = renderMarkdown(text);
     
   return (
     <div className="text-sm whitespace-pre-wrap leading-relaxed">
@@ -54,6 +58,9 @@ const SimpleMarkdownRenderer: React.FC<{ text: string, isStreaming?: boolean }> 
         ol {
             list-style-type: decimal;
         }
+        strong { font-weight: bold; }
+        em { font-style: italic; }
+        a { color: #475569; text-decoration: underline; }
       `}</style>
     </div>
   );
@@ -79,19 +86,40 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
       printWindow.document.write(`
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=IM+Fell+English+SC&family=Georgia&display=swap" rel="stylesheet">
         <style>
-          body { font-family: sans-serif; padding: 20px; font-size: 12pt; line-height: 1.5; color: #334155; }
-          .logo-container { text-align: center; margin-bottom: 20px; }
-          hr { border: none; border-top: 1px solid #e2e8f0; margin: 20px 0; }
-          p, div, span { word-wrap: break-word; }
-          ul, ol { padding-left: 20px; }
+          body { 
+            font-family: Georgia, serif; 
+            padding: 20px; 
+            font-size: 12pt; 
+            line-height: 1.6; 
+            color: #333; 
+          }
+          .logo-container { text-align: center; margin-bottom: 20px; color: #334155; }
+          hr { border: none; border-top: 1px solid #ccc; margin: 20px 0; }
+          p, div, span, li { word-wrap: break-word; }
+          ul, ol { padding-left: 25px; margin-top: 1em; margin-bottom: 1em; }
+          ul { list-style-type: disc; }
+          ol { list-style-type: decimal; }
+          strong { font-weight: bold; }
+          em { font-style: italic; }
+          a { color: #0000EE; text-decoration: underline; }
+          footer { 
+            margin-top: 30px; 
+            padding-top: 15px; 
+            border-top: 1px solid #ccc; 
+            text-align: center; 
+            font-size: 9pt; 
+            color: #666;
+            font-family: sans-serif;
+          }
         </style>
       `);
       printWindow.document.write('</head><body>');
       printWindow.document.write(logoTextHtml);
       printWindow.document.write('<hr />');
-      printWindow.document.write(message.text.replace(/\n/g, '<br/>'));
+      printWindow.document.write(renderMarkdown(message.text));
+      printWindow.document.write('<footer>Powered by LiahonaBooks.com</footer>')
       printWindow.document.write('</body></html>');
       
       printWindow.document.close();
