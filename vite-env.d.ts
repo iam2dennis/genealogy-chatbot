@@ -1,12 +1,24 @@
-// The reference to "vite/client" was removed to resolve a "Cannot find type definition file" error.
-// This is likely a project setup issue. Since the project doesn't use Vite-specific
-// client APIs (like import.meta.env), this removal is safe.
+/// <reference types="vite/client" />
 
-// Added type definition for process.env.API_KEY to support its usage in geminiService.ts
-// FIX: Augment the NodeJS namespace to avoid redeclaring the 'process' variable,
-// which resolves the "Cannot redeclare block-scoped variable" error.
+// Add types for the aistudio object used for API key selection
+interface AiStudio {
+  hasSelectedApiKey(): Promise<boolean>;
+  openSelectKey(): Promise<void>;
+}
+
+declare global {
+  interface Window {
+    aistudio?: AiStudio;
+  }
+}
+
+// Keep the NodeJS types for process.env.API_KEY, which is expected to be
+// polyfilled by the environment after a key is selected.
 declare namespace NodeJS {
   interface ProcessEnv {
     API_KEY: string;
   }
 }
+
+// FIX: Add export {} to treat this file as a module and allow global augmentation.
+export {};

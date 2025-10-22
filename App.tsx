@@ -7,26 +7,54 @@ import SuggestedPrompts from './components/SuggestedPrompts';
 import { getGenealogyAnswer, initializeGenAI } from './services/geminiService';
 import { LiahonaBooksLogo, RestartIcon } from './components/Icons';
 
+type ApiKeyStatus = 'checking' | 'needed' | 'initializing' | 'initialized' | 'error';
+
 const App: React.FC = () => {
-  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const [apiKeyStatus, setApiKeyStatus] = useState<ApiKeyStatus>('checking');
   const [initError, setInitError] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const initAttempted = useRef(false);
 
-  useEffect(() => {
+  const performInitialization = useCallback(() => {
     try {
+      setApiKeyStatus('initializing');
       initializeGenAI();
-      setIsInitialized(true);
+      setApiKeyStatus('initialized');
     } catch (error) {
       console.error("Initialization error:", error);
       const message = error instanceof Error ? error.message : "An unknown error occurred during initialization.";
       setInitError(`We couldn't connect to the AI service. Please check your connection or try refreshing the page.\n\nError: ${message}`);
+      setApiKeyStatus('error');
     }
   }, []);
 
+  useEffect(() => {
+    if (initAttempted.current) return;
+    initAttempted.current = true;
+
+    const checkApiKey = async () => {
+      if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        if (hasKey) {
+          performInitialization();
+        } else {
+          setApiKeyStatus('needed');
+        }
+      } else {
+        // Fallback for environments without the aistudio toolkit, though it will likely fail initialization.
+        console.warn("AI Studio toolkit not found. Proceeding with standard initialization.");
+        performInitialization();
+      }
+    };
+    
+    // The aistudio toolkit might load slightly after the app. A small delay can help.
+    setTimeout(checkApiKey, 100);
+
+  }, [performInitialization]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -34,6 +62,24 @@ const App: React.FC = () => {
     }
   }, [messages]);
   
+  const handleSelectKey = async () => {
+    if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
+      try {
+        await window.aistudio.openSelectKey();
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        if(hasKey) {
+            performInitialization();
+        }
+      } catch (error) {
+        setInitError("Something went wrong with the API key selection process. Please try again.");
+        setApiKeyStatus('error');
+      }
+    } else {
+      setInitError("The API key selection dialog is not available in this environment.");
+      setApiKeyStatus('error');
+    }
+  };
+
   const handleRestart = () => {
     setMessages([]);
     setPreferences(null);
@@ -77,7 +123,7 @@ const App: React.FC = () => {
     await getGenealogyAnswer(text, preferences, onStreamUpdate, onStreamEnd);
   }, [preferences]);
   
-  if (initError) {
+  if (apiKeyStatus === 'error') {
     return (
       <div className="flex flex-col h-screen items-center justify-center bg-slate-100 p-8 text-center">
         <h1 className="text-2xl font-bold text-red-600 mb-4">Initialization Failed</h1>
@@ -86,7 +132,25 @@ const App: React.FC = () => {
     );
   }
 
-  if (!isInitialized) {
+  if (apiKeyStatus === 'needed') {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-slate-100 p-8 text-center">
+        <div className="max-w-md">
+            <LiahonaBooksLogo className="w-48 text-slate-600 mx-auto" />
+            <h1 className="text-2xl font-bold text-slate-800 mt-6 mb-2">Welcome to the Genealogy Helper</h1>
+            <p className="text-slate-600 mb-8">To get started, please select an API key to connect to the AI service.</p>
+            <button
+                onClick={handleSelectKey}
+                className="w-full p-3 bg-slate-600 text-white rounded-md font-semibold hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition duration-200 shadow-lg shadow-slate-600/20"
+            >
+                Select API Key
+            </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (apiKeyStatus !== 'initialized') {
     return (
        <div className="flex flex-col h-screen items-center justify-center bg-slate-100">
          <LiahonaBooksLogo className="w-48 text-slate-400 animate-pulse" />
