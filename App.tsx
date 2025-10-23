@@ -11,9 +11,9 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [isAiReady, setIsAiReady] = useState<boolean>(false);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -22,13 +22,10 @@ const App: React.FC = () => {
   }, [messages]);
 
   useEffect(() => {
-    // This check simulates initialization and ensures the API key is available.
-    if (process.env.API_KEY) {
-      setIsAiReady(true);
-    } else {
-      console.error("API Key not found. The chatbot will be disabled.");
+    if (preferences && chatInputRef.current) {
+      chatInputRef.current.focus();
     }
-  }, []);
+  }, [preferences]);
   
   const handleRestart = () => {
     setMessages([]);
@@ -76,9 +73,9 @@ const App: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-slate-100 font-sans antialiased max-w-3xl mx-auto shadow-2xl rounded-lg">
       <header className="bg-white border-b border-slate-200 p-4 flex items-center justify-between z-10">
-        <div className="flex items-center space-x-3">
-            <div style={{ backgroundColor: '#FFFACD' }} className="p-2 rounded-lg shadow-sm">
-              <LiahonaBooksLogo className="w-24 text-slate-800" />
+        <div className="flex items-center space-x-4">
+            <div className="p-2 rounded-lg shadow-sm bg-gradient-to-br from-slate-100 to-slate-200">
+              <LiahonaBooksLogo className="w-28 text-slate-800" />
             </div>
             <div>
                 <h1 className="text-xl font-bold text-slate-800 leading-tight">
@@ -101,7 +98,6 @@ const App: React.FC = () => {
       {!preferences ? (
         <InitialQuestions 
           onSubmit={handlePreferencesSubmit}
-          isAiReady={isAiReady}
         />
       ) : (
         <main 
@@ -126,7 +122,7 @@ const App: React.FC = () => {
 
       {preferences && (
         <footer className="bg-white border-t border-slate-200 p-4 z-10">
-          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+          <ChatInput ref={chatInputRef} onSendMessage={handleSendMessage} isLoading={isLoading} />
         </footer>
       )}
     </div>
