@@ -121,10 +121,11 @@ const App: React.FC = () => {
          {preferences && (
           <button 
             onClick={handleRestart}
-            className="p-2 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
-            aria-label="Start Over"
+            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+            aria-label="Start a new chat"
           >
-              <RestartIcon className="w-5 h-5" />
+              <RestartIcon className="w-4 h-4" />
+              <span>New Chat</span>
           </button>
         )}
       </header>
