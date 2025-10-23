@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Message } from '../types';
-import { BotIcon, UserIcon, PrintIcon, CopyIcon, CheckIcon } from './Icons';
+import { GenealogyBotIcon, UserIcon, PrintIcon, CopyIcon, CheckIcon, BookIcon } from './Icons';
 
 interface ChatMessageProps {
   message: Message;
@@ -150,7 +150,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
         {isUser ? (
             <UserIcon className="w-6 h-6 text-slate-700" />
         ) : (
-            <BotIcon className="w-6 h-6 text-slate-700" />
+            <GenealogyBotIcon className="w-6 h-6 text-slate-700" />
         )}
       </div>
        {isUser ? (
@@ -159,7 +159,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
         </div>
       ) : (
         <div className="flex flex-col items-start w-full">
-          <div className="rounded-lg px-4 py-3 max-w-lg shadow-sm bg-white text-slate-800 border border-slate-200">
+          <div className="rounded-lg px-4 py-3 max-w-lg shadow-sm bg-white text-slate-800 border border-slate-200 w-full">
              {message.text ? (
                 <SimpleMarkdownRenderer text={message.text} isStreaming={isStreaming} />
              ) : (
@@ -170,6 +170,23 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isStreaming }) => {
                 </div>
              )}
           </div>
+          
+          {message.sources && message.sources.length > 0 && !isStreaming && (
+            <div className="mt-4 w-full max-w-lg p-4 bg-slate-100/80 border border-slate-200 rounded-lg">
+                <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                  <BookIcon className="w-5 h-5" />
+                  Sources
+                </h3>
+                <ul className="space-y-2">
+                  {message.sources.map((source, index) => (
+                    <li key={index} className="text-xs text-slate-600">
+                      <strong className="text-slate-800">{source.title}:</strong> {source.explanation}
+                    </li>
+                  ))}
+                </ul>
+            </div>
+          )}
+          
           {message.text && !isStreaming && (
             <div className="mt-2 flex items-center gap-4">
               <button
