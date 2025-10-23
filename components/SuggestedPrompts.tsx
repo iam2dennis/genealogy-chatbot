@@ -39,6 +39,14 @@ const getSuggestions = (preferences: UserPreferences): string[] => {
         ];
     }
 
+    if (website === WebsiteOption.US_NATIONAL_ARCHIVES) {
+         return [
+            `How do I find military records at the US National Archives?`,
+            `Can you explain how to search the National Archives Catalog online?`,
+            `What kind of immigration records are available at archives.gov?`,
+        ];
+    }
+
     return generalSuggestions;
 };
 
