@@ -13,7 +13,7 @@ const App: React.FC = () => {
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
-  const chatInputRef = useRef<HTMLInputElement>(null);
+  const chatInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (chatContainerRef.current) {
