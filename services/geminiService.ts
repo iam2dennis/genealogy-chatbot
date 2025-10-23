@@ -51,7 +51,12 @@ export const getGenealogyAnswer = async (
     });
     
     for await (const chunk of responseStream) {
-        onStreamUpdate(chunk.text);
+        const text = chunk.text;
+        // This check ensures that we only process chunks that have text content,
+        // which resolves the TypeScript strict-mode error (TS2345).
+        if (text) {
+            onStreamUpdate(text);
+        }
     }
 
   } catch (error) {
