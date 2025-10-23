@@ -14,6 +14,7 @@ export enum WebsiteOption {
     ANCESTRY = "Ancestry.com",
     MY_HERITAGE = "MyHeritage",
     FIND_MY_PAST = "Findmypast",
+    US_NATIONAL_ARCHIVES = "US National Archives",
     OTHER = "Other"
 }
 
