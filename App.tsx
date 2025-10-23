@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Message, UserPreferences } from './types';
+import { Message, UserPreferences, Source } from './types';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import InitialQuestions from './components/InitialQuestions';
@@ -44,6 +44,30 @@ const App: React.FC = () => {
       },
     ]);
   };
+  
+  const parseSources = (text: string): { mainText: string; sources: Source[] } => {
+    const sources: Source[] = [];
+    const sourceMarker = '--- Sources ---';
+    const parts = text.split(sourceMarker);
+    const mainText = parts[0].trim();
+    
+    if (parts.length > 1) {
+      const sourceText = parts[1].trim();
+      const sourceLines = sourceText.split('\n').filter(line => line.trim().startsWith('*') || line.trim().startsWith('-'));
+      
+      sourceLines.forEach(line => {
+        const match = line.trim().substring(1).trim().match(/^(.*?):\s*(.*)$/);
+        if (match) {
+          sources.push({
+            title: match[1].replace(/\*\*/g, '').trim(), // Remove bold markdown
+            explanation: match[2].trim()
+          });
+        }
+      });
+    }
+
+    return { mainText, sources };
+  };
 
   const handleSendMessage = useCallback(async (text: string) => {
     if (!text.trim() || !preferences) return;
@@ -64,6 +88,16 @@ const App: React.FC = () => {
     };
 
     const onStreamEnd = () => {
+       setMessages(prev => {
+        const newMessages = [...prev];
+        const lastMessage = newMessages[newMessages.length - 1];
+        if (lastMessage.role === 'model' && lastMessage.text) {
+          const { mainText, sources } = parseSources(lastMessage.text);
+          lastMessage.text = mainText;
+          lastMessage.sources = sources;
+        }
+        return newMessages;
+      });
       setIsLoading(false);
     };
     

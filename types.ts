@@ -1,6 +1,12 @@
+export type Source = {
+  title: string;
+  explanation: string;
+};
+
 export type Message = {
   role: 'user' | 'model';
   text: string;
+  sources?: Source[];
 };
 
 export type UserPreferences = {
